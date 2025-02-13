@@ -34,7 +34,7 @@ function SetupCanvas() {
   });
   document.body.addEventListener("keyup", function(e){
     keys[e.keyCode] = false;
-    if(e.keyCode === 70){
+    if(lives > 0 && e.keyCode === 70){
       bullets.push(new Bullet(ship.angle));
     }
   });
@@ -352,4 +352,5 @@ loop1:
 
   requestAnimationFrame(Render);
 }
+
 
