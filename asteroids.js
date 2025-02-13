@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', SetupCanvas);
 function SetupCanvas() {
   canvas = document.getElementById('my-canvas');
   ctx = canvas.getContext('2d');
+  canvasWidth = Math.min(1400, window.innerWidth * 0.9);
+  canvasHeight = Math.min(1000, window.innerHeight * 0.9);
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
   ctx.fillStyle = 'black';
@@ -101,6 +103,37 @@ class Ship {
     }
     ctx.closePath();
     ctx.stroke();
+    
+    // Desenho do fogo da nave
+    if(this.movingForward) {
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      
+
+      let radians = this.angle / Math.PI * 180;
+      
+
+      let flameLength = this.radius * 1.5;
+      let sideOffset = this.radius * 0.5;
+      
+
+      let flameTipX = this.x + flameLength * Math.cos(radians);
+      let flameTipY = this.y + flameLength * Math.sin(radians);
+      
+
+      let leftX = this.x + sideOffset * Math.cos(radians + 0.5);
+      let leftY = this.y + sideOffset * Math.sin(radians + 0.5);
+      
+      let rightX = this.x + sideOffset * Math.cos(radians - 0.5);
+      let rightY = this.y + sideOffset * Math.sin(radians - 0.5);
+      
+      ctx.moveTo(leftX, leftY);
+      ctx.lineTo(flameTipX, flameTipY);
+      ctx.lineTo(rightX, rightY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
   }
 }
 /* right here he created the bullets, he defined the bullets on the drawing and made it so the nose is always the place the bullets comes off, thisy thisx repressents the position of the nose of the spaceship */
@@ -183,8 +216,8 @@ function CircleCollisions(p1x, p1y, r1, p2x, p2y, r2){
 }
 
 function DrawLifeShips(){
-  let startX = 1350;
-  let startY = 10;
+  let startX = canvas.width - 20;
+  let startY = 20;
   let points = [[9,9], [-9,9]];
   ctx.strokeStyle = 'white';
   for(let i = 0; i < lives; i++){
@@ -196,6 +229,38 @@ function DrawLifeShips(){
     ctx.closePath();
     ctx.stroke();
     startX -= 30;
+  }
+}
+
+/* explosao*/
+let explosionParticles = []; 
+
+class ExplosionParticle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.radius = Math.random() * 3 + 1; 
+    this.speed = Math.random() * 2 + 1;    
+    
+    this.angle = Math.random() * Math.PI * 2;
+    this.life = 30; 
+  }
+  Update() {
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed;
+    this.life--; 
+  }
+  Draw() {
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function triggerExplosion(x, y) {
+  for(let i = 0; i < 20; i++){
+    explosionParticles.push(new ExplosionParticle(x, y));
   }
 }
 
@@ -224,6 +289,7 @@ function Render(){
   if(asteroids.length !== 0){
     for(let k = 0; k < asteroids.length; k++){
       if(CircleCollisions(ship.x, ship.y, 11, asteroids[k].x, asteroids[k].y, asteroids[k].collisionRadius)){
+        triggerExplosion(ship.x, ship.y);
         ship.x = canvasWidth / 2;
         ship.y = canvasHeight / 2;
         ship.velX = 0;
@@ -233,6 +299,7 @@ function Render(){
     }
   }
 
+  
   if(asteroids.length !== 0 && bullets.length !== 0){
 loop1:
     for(let l = 0; l < asteroids.length; l++){
@@ -272,5 +339,17 @@ loop1:
       asteroids[j].Draw(j);
     }
   }
+
+
+  for(let i = explosionParticles.length - 1; i >= 0; i--){
+    explosionParticles[i].Update();
+    explosionParticles[i].Draw();
+
+    if(explosionParticles[i].life <= 0){
+      explosionParticles.splice(i, 1);
+    }
+  }
+
   requestAnimationFrame(Render);
 }
+
